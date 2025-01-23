@@ -12,6 +12,9 @@ import org.junit.jupiter.api.Test;
 
 import com.devsuperior.dsmovie.tests.TokenUtil;
 
+import io.restassured.http.ContentType;
+import net.minidev.json.JSONObject;
+
 public class MovieControllerRA {
 
 	private String clientUsername, clientPassword, adminUsername, adminPassword;
@@ -99,15 +102,58 @@ public class MovieControllerRA {
 	@Test
 	public void insertShouldReturnUnprocessableEntityWhenAdminLoggedAndBlankTitle() throws JSONException {
 		
+		postMovieInstance.put("title", "");
+		JSONObject newMovie = new JSONObject(postMovieInstance);	
+
+		  given()
+				.header("Content-Type", "application/json")
+        .header("Authorization", "Bearer " + adminToken)
+        .body(newMovie)
+				.contentType(ContentType.JSON)
+				.accept(ContentType.JSON)
+				.when()
+        .post("/movies")
+        .then()
+        .statusCode(422)
+				.body("error", equalTo("Dados inválidos"))
+        .body("errors.fieldName[0]", equalTo("title"))
+				.body("errors.message[0]", equalTo("Tamanho deve ser entre 5 e 80 caracteres"))
+				.body("errors.fieldName[1]", equalTo("title"))
+				.body("errors.message[1]", equalTo("Campo requerido"));
 	}
 	
 	@Test
 	public void insertShouldReturnForbiddenWhenClientLogged() throws Exception {
 
+		JSONObject newMovie = new JSONObject(postMovieInstance);
+		
+    given()
+		.header("Content-Type", "application/json")
+		.header("Authorization", "Bearer " + clientToken)
+		.body(newMovie)
+		.contentType(ContentType.JSON)
+		.accept(ContentType.JSON)
+		.when()
+		.post("/movies")
+		.then()
+		.log().all()
+		.statusCode(403);
 	}
 	
 	@Test
 	public void insertShouldReturnUnauthorizedWhenInvalidToken() throws Exception {
 	
+		JSONObject newMovie = new JSONObject(postMovieInstance);
+		
+    given()
+		.header("Content-Type", "application/json")
+		.header("Authorization", "Bearer " + invalidToken)
+		.body(newMovie)
+		.contentType(ContentType.JSON)
+		.accept(ContentType.JSON)
+		.when()
+		.post("/movies")
+		.then()
+		.statusCode(401);
 	}
 }
